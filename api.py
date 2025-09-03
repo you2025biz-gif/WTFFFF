@@ -71,6 +71,8 @@ class MiniAppAPI:
         self.app.router.add_post('/api/create-deal', self.create_deal)
         self.app.router.add_post('/api/deal-action', self.deal_action)
         self.app.router.add_post('/api/sync-data', self.sync_data)
+        self.app.router.add_post('/api/update-config', self.update_config)
+        self.app.router.add_get('/api/fix-config', self.fix_config)
         self.app.router.add_get('/api/health', self.health_check)
 
     async def serve_index(self, request: Request) -> Response:
@@ -101,10 +103,22 @@ class MiniAppAPI:
             return web.Response(text='// JS не найден', status=404)
     
     async def serve_config(self, request: Request) -> Response:
-        """Обслуживание конфигурационного файла"""
+        """Обслуживание конфигурационного файла с автоматическим исправлением"""
         try:
             with open('config.js', 'r', encoding='utf-8') as f:
                 content = f.read()
+            
+            # Автоматически исправляем localhost на Heroku URL
+            if 'localhost:5000' in content:
+                content = content.replace(
+                    "API_BASE_URL: 'http://localhost:5000'",
+                    "API_BASE_URL: 'https://garant-bot-mini-app-b961dcec28c0.herokuapp.com'"
+                )
+                # Сохраняем исправленный config.js
+                with open('config.js', 'w', encoding='utf-8') as f:
+                    f.write(content)
+                logger.info("Config.js автоматически исправлен при запросе")
+            
             return web.Response(text=content, content_type='application/javascript')
         except FileNotFoundError:
             return web.Response(text='// Config не найден', status=404)
@@ -144,6 +158,72 @@ class MiniAppAPI:
             
         except Exception as e:
             logger.error(f"Ошибка синхронизации данных: {e}")
+            return web.json_response({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
+
+    async def update_config(self, request: Request) -> Response:
+        """Обновление config.js на сервере"""
+        try:
+            data = await request.json()
+            config_content = data.get('config_content', '')
+            
+            if not config_content:
+                return web.json_response({
+                    'status': 'error',
+                    'message': 'Config content is required'
+                }, status=400)
+            
+            # Записываем новый config.js
+            with open('config.js', 'w', encoding='utf-8') as f:
+                f.write(config_content)
+            
+            logger.info("Config.js обновлен")
+            
+            return web.json_response({
+                'status': 'success',
+                'message': 'Config.js успешно обновлен'
+            })
+            
+        except Exception as e:
+            logger.error(f"Ошибка обновления config.js: {e}")
+            return web.json_response({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
+
+    async def fix_config(self, request: Request) -> Response:
+        """Автоматическое исправление config.js"""
+        try:
+            # Читаем текущий config.js
+            try:
+                with open('config.js', 'r', encoding='utf-8') as f:
+                    current_config = f.read()
+            except FileNotFoundError:
+                current_config = ""
+            
+            # Заменяем localhost на Heroku URL
+            fixed_config = current_config.replace(
+                "API_BASE_URL: 'http://localhost:5000'",
+                "API_BASE_URL: 'https://garant-bot-mini-app-b961dcec28c0.herokuapp.com'"
+            )
+            
+            # Записываем исправленный config.js
+            with open('config.js', 'w', encoding='utf-8') as f:
+                f.write(fixed_config)
+            
+            logger.info("Config.js автоматически исправлен")
+            
+            return web.json_response({
+                'status': 'success',
+                'message': 'Config.js автоматически исправлен',
+                'old_config': current_config[:100] + '...' if len(current_config) > 100 else current_config,
+                'fixed': 'localhost:5000' in current_config
+            })
+            
+        except Exception as e:
+            logger.error(f"Ошибка исправления config.js: {e}")
             return web.json_response({
                 'status': 'error',
                 'message': str(e)
