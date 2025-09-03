@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Гарант-Бот Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="config.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="app-title">
+                    <i class="fas fa-shield-alt"></i>
+                    Гарант-Бот
+                </h1>
+                <div class="user-info">
+                    <div class="balance-display">
+                        <span class="balance-label">Баланс:</span>
+                        <span class="balance-amount" id="userBalance">0.00 TON</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="profile">
+                <i class="fas fa-user"></i>
+                <span>Профиль</span>
+            </button>
+            <button class="nav-tab" data-tab="deals">
+                <i class="fas fa-handshake"></i>
+                <span>Сделки</span>
+            </button>
+            <button class="nav-tab" data-tab="history">
+                <i class="fas fa-history"></i>
+                <span>История</span>
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Profile Tab -->
+            <div class="tab-content active" id="profile-tab">
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="profile-info">
+                            <h2 id="userName">Пользователь</h2>
+                            <p id="userId">ID: 0</p>
+                        </div>
+                    </div>
+                    
+                    <div class="balance-cards">
+                        <div class="balance-card">
+                            <div class="balance-icon">
+                                <i class="fas fa-wallet"></i>
+                            </div>
+                            <div class="balance-details">
+                                <span class="balance-label">Доступно</span>
+                                <span class="balance-value" id="availableBalance">0.00 TON</span>
+                            </div>
+                        </div>
+                        
+                        <div class="balance-card">
+                            <div class="balance-icon frozen">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <div class="balance-details">
+                                <span class="balance-label">Заморожено</span>
+                                <span class="balance-value" id="frozenBalance">0.00 TON</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn primary" id="topupBtn">
+                        <i class="fas fa-plus"></i>
+                        Пополнить
+                    </button>
+                    <button class="action-btn secondary" id="withdrawBtn">
+                        <i class="fas fa-minus"></i>
+                        Вывести
+                    </button>
+                </div>
+
+                <div class="quick-actions">
+                    <button class="quick-action" id="createDealBtn">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Создать сделку</span>
+                    </button>
+                    <button class="quick-action" id="myDealsBtn">
+                        <i class="fas fa-list"></i>
+                        <span>Мои сделки</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Deals Tab -->
+            <div class="tab-content" id="deals-tab">
+                <div class="deals-header">
+                    <h2>Активные сделки</h2>
+                    <button class="create-deal-btn" id="createDealBtn2">
+                        <i class="fas fa-plus"></i>
+                        Создать
+                    </button>
+                </div>
+                
+                <div class="deals-list" id="dealsList">
+                    <div class="empty-state">
+                        <i class="fas fa-handshake"></i>
+                        <p>Нет активных сделок</p>
+                        <button class="btn-primary" id="createFirstDealBtn">Создать первую сделку</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div class="tab-content" id="history-tab">
+                <div class="history-header">
+                    <h2>История операций</h2>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">Все</button>
+                        <button class="filter-btn" data-filter="topup">Пополнения</button>
+                        <button class="filter-btn" data-filter="withdraw">Выводы</button>
+                        <button class="filter-btn" data-filter="deals">Сделки</button>
+                    </div>
+                </div>
+                
+                <div class="history-list" id="historyList">
+                    <div class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <p>История операций пуста</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Modals -->
+        <div class="modal" id="topupModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Пополнение баланса</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Сумма (TON)</label>
+                        <input type="number" id="topupAmount" placeholder="0.00" step="0.01" min="0.01" max="1000">
+                    </div>
+                    <div class="wallet-info">
+                        <p>Отправьте TON на адрес:</p>
+                        <div class="wallet-address">
+                            <code id="walletAddress">UQCow0sO7p9izwbvm8XMYlEfEirNEW-yXPqyS_rcTmS-GUtg</code>
+                            <button class="copy-btn" id="copyWalletBtn">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>TX Hash</label>
+                        <input type="text" id="txHash" placeholder="Введите hash транзакции">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="cancelTopupBtn">Отмена</button>
+                    <button class="btn-primary" id="submitTopupBtn">Отправить заявку</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal" id="withdrawModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Вывод средств</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Сумма (TON)</label>
+                        <input type="number" id="withdrawAmount" placeholder="0.00" step="0.01" min="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Адрес кошелька</label>
+                        <input type="text" id="withdrawAddress" placeholder="Введите адрес TON кошелька">
+                    </div>
+                    <div class="withdraw-info">
+                        <p><i class="fas fa-info-circle"></i> Комиссия за вывод: 5%</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="cancelWithdrawBtn">Отмена</button>
+                    <button class="btn-primary" id="submitWithdrawBtn">Создать заявку</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal" id="createDealModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Создать сделку</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Тип сделки</label>
+                        <div class="deal-type-buttons">
+                            <button class="deal-type-btn active" data-type="sell">
+                                <i class="fas fa-gift"></i>
+                                <span>Продать подарок</span>
+                            </button>
+                            <button class="deal-type-btn" data-type="buy">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span>Купить подарок</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Название подарка</label>
+                        <input type="text" id="dealName" placeholder="Например: Steam Gift Card $50">
+                    </div>
+                    <div class="form-group">
+                        <label>Сумма (TON)</label>
+                        <input type="number" id="dealAmount" placeholder="0.00" step="0.01" min="0.01">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="cancelDealBtn">Отмена</button>
+                    <button class="btn-primary" id="submitDealBtn">Создать сделку</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Загрузка...</p>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
